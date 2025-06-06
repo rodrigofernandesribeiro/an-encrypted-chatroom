@@ -125,14 +125,20 @@ class ChatUI:
             print("nenhum utilizador conectado\n")
             return
             
-        username_width = max(len("utilizador"), max(len(username) for username in users))
-        id_width = max(len("id"), len(str(len(users))))
+        # obtém a lista de nomes de utilizadores
+        usernames = list(users)
         
+        # calcula larguras das colunas
+        username_width = max(len("utilizador"), max(len(username) for username in usernames))
+        id_width = max(len("id"), len(str(len(usernames))))
+        
+        # imprime cabeçalho
         print("+"+"-" * (username_width + id_width + 5)+"+")
         print(f"| {'utilizador':<{username_width}} | {'id':<{id_width}} |")
         print("+"+"-" * (username_width + id_width + 5)+"+")
         
-        for i, username in enumerate(users, 1):
+        # imprime utilizadores
+        for i, username in enumerate(usernames, 1):
             print(f"| {username:<{username_width}} | {i:<{id_width}} |")
         print("+" + "-" * (username_width + id_width + 5) + "+")
         print()
@@ -153,8 +159,7 @@ class ChatUI:
         
         print("utilizadores conectados")
         print("-" * 60)
-        users = list(server.clients.values())
-        ChatUI.print_users_table(users)
+        ChatUI.print_users_table(list(server.clients.keys()))
         
         print("mensagens recentes")
         print("-" * 60)
@@ -194,6 +199,7 @@ class Server:
         self.running = False
         self.start_time = None
         self.encryption = Encryption()
+        self.lock = threading.Lock()  # lock para sincronização
         
         try:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -214,15 +220,17 @@ class Server:
         """atualiza o dashboard periodicamente"""
         while self.running:
             try:
-                self.update_dashboard()
+                with self.lock:
+                    self.update_dashboard()
                 time.sleep(5)  # atualiza a cada 5 segundos
             except Exception as e:
                 time.sleep(5)  # espera antes de tentar novamente
     
     def add_info_message(self, message):
-        self.info_messages.append(message)
-        if len(self.info_messages) > 5:
-            self.info_messages.pop(0)
+        with self.lock:
+            self.info_messages.append(message)
+            if len(self.info_messages) > 5:
+                self.info_messages.pop(0)
     
     def get_uptime(self):
         if not self.start_time:
@@ -243,7 +251,8 @@ class Server:
         while self.running:
             try:
                 client_socket, address = self.server_socket.accept()
-                self.connections.add(client_socket)
+                with self.lock:
+                    self.connections.add(client_socket)
                 client_thread = threading.Thread(
                     target=self.handle_client,
                     args=(client_socket, address)
@@ -265,7 +274,8 @@ class Server:
                 return
             
             username = self.encryption.decrypt(username_data)
-            self.clients[username] = client_socket
+            with self.lock:
+                self.clients[username] = client_socket
             self.send_message_history(client_socket)
             
             welcome_msg = ChatMessage("sistema", f"{username} entrou no chat", "system")
@@ -292,27 +302,29 @@ class Server:
     
     def remove_client(self, client_socket):
         username = None
-        for name, socket in self.clients.items():
-            if socket == client_socket:
-                username = name
-                break
-        
-        if username:
-            self.clients.pop(username, None)
-            self.connections.discard(client_socket)
+        with self.lock:
+            for name, socket in self.clients.items():
+                if socket == client_socket:
+                    username = name
+                    break
             
-            goodbye_msg = ChatMessage("sistema", f"{username} saiu do chat", "system")
-            self.broadcast_message(goodbye_msg)
-            
-            try:
-                client_socket.close()
-            except:
-                pass
+            if username:
+                self.clients.pop(username, None)
+                self.connections.discard(client_socket)
+                
+                goodbye_msg = ChatMessage("sistema", f"{username} saiu do chat", "system")
+                self.broadcast_message(goodbye_msg)
+                
+                try:
+                    client_socket.close()
+                except:
+                    pass
     
     def send_message_history(self, client_socket):
         try:
-            for message in self.message_history:
-                self.send_to_client(client_socket, message)
+            with self.lock:
+                for message in self.message_history:
+                    self.send_to_client(client_socket, message)
         except Exception as e:
             raise
     
@@ -325,16 +337,17 @@ class Server:
             raise
     
     def broadcast_message(self, message):
-        self.message_history.append(message)
-        if len(self.message_history) > 100:
-            self.message_history.pop(0)
-        
-        connections_copy = self.connections.copy()
-        for client_socket in connections_copy:
-            try:
-                self.send_to_client(client_socket, message)
-            except:
-                self.remove_client(client_socket)
+        with self.lock:
+            self.message_history.append(message)
+            if len(self.message_history) > 100:
+                self.message_history.pop(0)
+            
+            connections_copy = self.connections.copy()
+            for client_socket in connections_copy:
+                try:
+                    self.send_to_client(client_socket, message)
+                except:
+                    self.remove_client(client_socket)
     
     def server_input(self):
         while self.running:
@@ -433,10 +446,13 @@ def main():
     else:
         server = Server()
         try:
-            ChatUI.print_welcome("servidor")
+            # mostra o dashboard inicial
+            ChatUI.print_server_dashboard(server)
+            # inicia a thread de aceitação de conexões
             accept_thread = threading.Thread(target=server.accept_connections)
             accept_thread.daemon = True
             accept_thread.start()
+            # inicia o loop de entrada do servidor
             server.server_input()
         except Exception as e:
             ChatUI.print_error(str(e))

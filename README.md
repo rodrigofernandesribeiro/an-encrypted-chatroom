@@ -1,26 +1,26 @@
-# chat-encriptado
+# encrypted-chat
 
-uma aplicação de chat segura com encriptação ponto-a-ponto cli.
+a secure end-to-end encrypted chat application with cli interface.
 
-## funcionalidades
+## features
 
-- encriptação ponto-a-ponto - fernet
-- mensagens em tempo real
-- histórico de mensagens
-- suporte para múltiplos clientes
+- end-to-end encryption - fernet
+- real-time messaging
+- message history
+- multiple client support
 - server dashboard
 
-## instalação
+## installation
 
 ```bash
 git clone https://github.com/rodrigofernandesribeiro/an-encrypted-chatroom.git
-cd chat-encriptado
+cd encrypted-chat
 pip install -r requirements.txt
 ```
 
-## utilização
+## usage
 
-### iniciar o servidor
+### start the server
 
 ```bash
 python chat.py
@@ -29,15 +29,15 @@ python chat.py
 ### user
 
 ```bash
-python chat.py <ip_do_servidor>
+python chat.py <server_ip>
 ```
 
-## comandos
+## commands
 
-- `/leave` - sair do chat
-- `/shutdown` - parar o servidor (apenas servidor)
+- `/leave` - exit the chat
+- `/shutdown` - shutdown the server (server only)
 
-## requisitos
+## requirements
 
 - python 3.8+
 - cryptography==41.0.7
