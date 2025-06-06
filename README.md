@@ -2,7 +2,7 @@
 
 a secure end-to-end encrypted chat application with cli interface.
 
-![](https://github.com/rodrigofernandesribeiro/cool-go-cli-to-do-list/blob/main/showcase.gif)
+![](https://github.com/rodrigofernandesribeiro/an-encrypted-chatroom/blob/main/showcase.gif)
 
 ## features
 
