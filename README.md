@@ -2,6 +2,8 @@
 
 a secure end-to-end encrypted chat application with cli interface.
 
+![](https://github.com/rodrigofernandesribeiro/cool-go-cli-to-do-list/blob/main/showcase.gif)
+
 ## features
 
 - end-to-end encryption - fernet
