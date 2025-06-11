@@ -15,7 +15,7 @@ a secure end-to-end encrypted chat application with cli interface.
 ## installation
 
 ```bash
-git clone https://github.com/rodrigofernandesribeiro/an-encrypted-chatroom.git
+git clone https://github.com/0sum-git/an-encrypted-chatroom.git
 cd encrypted-chat
 pip install -r requirements.txt
 ```
